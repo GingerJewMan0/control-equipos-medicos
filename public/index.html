@@ -49,7 +49,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Actualizar Equipo y Modelo</h5>
+                    <h5 class="modal-title">Actualizar Datos del Equipo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -57,7 +57,7 @@
                         <input type="hidden" id="edit-id">
                         <div class="mb-3">
                             <label for="edit-codigo" class="form-label">Código de Inventario</label>
-                            <input type="text" class="form-control" id="edit-codigo" disabled>
+                            <input type="text" class="form-control" id="edit-codigo" required placeholder="Ej. EQ-001">
                         </div>
                         <div class="mb-3">
                             <label for="edit-nombre" class="form-label">Equipo / Modelo</label>
@@ -202,6 +202,7 @@
         async function guardarCambios(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
+            const codigo_inventario = document.getElementById('edit-codigo').value;
             const nombre_equipo = document.getElementById('edit-nombre').value;
             const hospital = document.getElementById('edit-hospital').value;
             const ubicacion = document.getElementById('edit-ubicacion').value;
@@ -211,14 +212,15 @@
                 const response = await fetch(`/api/equipos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre_equipo, hospital, ubicacion, estado })
+                    body: JSON.stringify({ codigo_inventario, nombre_equipo, hospital, ubicacion, estado })
                 });
 
                 if (response.ok) {
                     modalEditarInstance.hide();
                     cargarEquipos();
                 } else {
-                    alert('Error al actualizar el equipo');
+                    const errData = await response.json();
+                    alert('Error al actualizar: ' + (errData.error || 'Verifica los datos'));
                 }
             } catch (error) {
                 console.error('Error:', error);

@@ -48,17 +48,17 @@ app.post('/api/equipos', async (req, res) => {
   }
 });
 
-// Actualizar equipo existente
+// Actualizar equipo existente (incluyendo código de inventario)
 app.put('/api/equipos/:id', async (req, res) => {
   const { id } = req.params;
-  const { nombre_equipo, hospital, ubicacion, estado } = req.body;
+  const { codigo_inventario, nombre_equipo, hospital, ubicacion, estado } = req.body;
   try {
     const query = `
       UPDATE equipos 
-      SET nombre_equipo = $1, hospital = $2, ubicacion = $3, estado = $4, ultima_actualizacion = NOW() 
-      WHERE id = $5 RETURNING *;
+      SET codigo_inventario = $1, nombre_equipo = $2, hospital = $3, ubicacion = $4, estado = $5, ultima_actualizacion = NOW() 
+      WHERE id = $6 RETURNING *;
     `;
-    const values = [nombre_equipo, hospital, ubicacion, estado, id];
+    const values = [codigo_inventario, nombre_equipo, hospital, ubicacion, estado, id];
     const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {
@@ -68,6 +68,9 @@ app.put('/api/equipos/:id', async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err.message);
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'El código de inventario ya está en uso por otro equipo.' });
+    }
     res.status(500).send('Error al actualizar el equipo');
   }
 });
