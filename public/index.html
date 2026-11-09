@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Equipos Médicos</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container py-5">
+        <header class="pb-3 mb-4 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 fw-bold text-primary">🏥 Control de Equipos Médicos</h1>
+                <p class="text-muted m-0">Monitoreo de ubicación y estado en tiempo real</p>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" onclick="cargarEquipos()">🔄 Refrescar</button>
+        </header>
+
+        <!-- Tabla de Equipos -->
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Código</th>
+                                <th>Equipo / Modelo</th>
+                                <th>Ubicación Actual</th>
+                                <th>Estado</th>
+                                <th>Última Actualización</th>
+                                <th class="text-end">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-equipos">
+                            <!-- Los datos se cargan dinámicamente con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Equipo -->
+    <div class="modal fade" id="modalEditar" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Actualizar Equipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-editar">
+                        <input type="hidden" id="edit-id">
+                        <div class="mb-3">
+                            <label for="edit-nombre" class="form-label">Equipo</label>
+                            <input type="text" class="form-control" id="edit-nombre" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-ubicacion" class="form-label">Nueva Ubicación</label>
+                            <input type="text" class="form-control" id="edit-ubicacion" required placeholder="Ej. Urgencias - Piso 2">
+                        </div>
+                        <div class="mb-3">
+                            <label for="edit-estado" class="form-label">Estado del Equipo</label>
+                            <select class="form-select" id="edit-estado">
+                                <option value="Disponible">Disponible</option>
+                                <option value="En Uso">En Uso</option>
+                                <option value="En Mantenimiento">En Mantenimiento</option>
+                                <option value="Fuera de Servicio">Fuera de Servicio</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Guardar Cambios en SQL</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let modalInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            modalInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
+            cargarEquipos();
+            
+            document.getElementById('form-editar').addEventListener('submit', guardarCambios);
+        });
+
+        async function cargarEquipos() {
+            try {
+                const response = await fetch('/api/equipos');
+                const equipos = await response.json();
+                const tbody = document.getElementById('tabla-equipos');
+                tbody.innerHTML = '';
+
+                if (equipos.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">No hay equipos registrados en la base de datos.</td></tr>`;
+                    return;
+                }
+
+                equipos.forEach(eq => {
+                    let badgeClass = 'bg-success';
+                    if (eq.estado === 'En Uso') badgeClass = 'bg-warning text-dark';
+                    if (eq.estado === 'En Mantenimiento' || eq.estado === 'Fuera de Servicio') badgeClass = 'bg-danger';
+
+                    const fecha = eq.ultima_actualizacion ? new Date(eq.ultima_actualizacion).toLocaleString() : 'N/A';
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><span class="fw-bold">${eq.codigo_inventario}</span></td>
+                            <td>${eq.nombre_equipo}</td>
+                            <td>📍 ${eq.ubicacion}</td>
+                            <td><span class="badge ${badgeClass}">${eq.estado}</span></td>
+                            <td class="text-muted small">${fecha}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary" onclick="abrirModal(${eq.id}, '${eq.nombre_equipo}', '${eq.ubicacion}', '${eq.estado}')">
+                                    Editar
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) {
+                console.error('Error al cargar equipos:', error);
+            }
+        }
+
+        function abrirModal(id, nombre, ubicacion, estado) {
+            document.getElementById('edit-id').value = id;
+            document.getElementById('edit-nombre').value = nombre;
+            document.getElementById('edit-ubicacion').value = ubicacion;
+            document.getElementById('edit-estado').value = estado;
+            modalInstance.show();
+        }
+
+        async function guardarCambios(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-id').value;
+            const ubicacion = document.getElementById('edit-ubicacion').value;
+            const estado = document.getElementById('edit-estado').value;
+
+            try {
+                const response = await fetch(`/api/equipos/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ubicacion, estado })
+                });
+
+                if (response.ok) {
+                    modalInstance.hide();
+                    cargarEquipos(); // Recarga la tabla de inmediato reflejando los cambios en la SQL
+                } else {
+                    alert('Error al actualizar el equipo');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de red al actualizar');
+            }
+        }
+    </script>
+</body>
+</html>
