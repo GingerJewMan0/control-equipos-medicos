@@ -14,7 +14,10 @@
                 <h1 class="h3 fw-bold text-primary">🏥 Control de Equipos Médicos</h1>
                 <p class="text-muted m-0">Monitoreo de equipos, hospitales y estados en tiempo real</p>
             </div>
-            <button class="btn btn-outline-secondary btn-sm" onclick="cargarEquipos()">🔄 Refrescar</button>
+            <div>
+                <button class="btn btn-success btn-sm me-2" onclick="abrirModalNuevo()">➕ Agregar Nuevo Equipo</button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="cargarEquipos()">🔄 Refrescar</button>
+            </div>
         </header>
 
         <div class="card shadow-sm">
@@ -53,6 +56,10 @@
                     <form id="form-editar">
                         <input type="hidden" id="edit-id">
                         <div class="mb-3">
+                            <label for="edit-codigo" class="form-label">Código de Inventario</label>
+                            <input type="text" class="form-control" id="edit-codigo" disabled>
+                        </div>
+                        <div class="mb-3">
                             <label for="edit-nombre" class="form-label">Equipo / Modelo</label>
                             <input type="text" class="form-control" id="edit-nombre" required placeholder="Ej. Desfibrilador Biphasic Pro">
                         </div>
@@ -80,14 +87,60 @@
         </div>
     </div>
 
+    <!-- Modal para Agregar Nuevo Equipo -->
+    <div class="modal fade" id="modalNuevo" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Nuevo Equipo Médico</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-nuevo">
+                        <div class="mb-3">
+                            <label for="new-codigo" class="form-label">Código de Inventario</label>
+                            <input type="text" class="form-control" id="new-codigo" required placeholder="Ej. EQ-005">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-nombre" class="form-label">Equipo / Modelo</label>
+                            <input type="text" class="form-control" id="new-nombre" required placeholder="Ej. Electrocardiógrafo Portátil">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-hospital" class="form-label">Hospital</label>
+                            <input type="text" class="form-control" id="new-hospital" required placeholder="Ej. Hospital General">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-ubicacion" class="form-label">Ubicación Actual (Área / Piso)</label>
+                            <input type="text" class="form-control" id="new-ubicacion" required placeholder="Ej. Cardiología - Sala 2">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-estado" class="form-label">Estado del Equipo</label>
+                            <select class="form-select" id="new-estado">
+                                <option value="Disponible">Disponible</option>
+                                <option value="En Uso">En Uso</option>
+                                <option value="En Mantenimiento">En Mantenimiento</option>
+                                <option value="Fuera de Servicio">Fuera de Servicio</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success w-100">Registrar en la Base de Datos</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let modalInstance = null;
+        let modalEditarInstance = null;
+        let modalNuevoInstance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            modalInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
+            modalEditarInstance = new bootstrap.Modal(document.getElementById('modalEditar'));
+            modalNuevoInstance = new bootstrap.Modal(document.getElementById('modalNuevo'));
             cargarEquipos();
+            
             document.getElementById('form-editar').addEventListener('submit', guardarCambios);
+            document.getElementById('form-nuevo').addEventListener('submit', registrarEquipo);
         });
 
         async function cargarEquipos() {
@@ -119,7 +172,7 @@
                             <td><span class="badge ${badgeClass}">${eq.estado}</span></td>
                             <td class="text-muted small">${fecha}</td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-primary" onclick="abrirModal(${eq.id}, '${eq.nombre_equipo}', '${hospitalNombre}', '${eq.ubicacion}', '${eq.estado}')">
+                                <button class="btn btn-sm btn-outline-primary" onclick="abrirModal(${eq.id}, '${eq.codigo_inventario}', '${eq.nombre_equipo}', '${hospitalNombre}', '${eq.ubicacion}', '${eq.estado}')">
                                     Editar
                                 </button>
                             </td>
@@ -131,13 +184,19 @@
             }
         }
 
-        function abrirModal(id, nombre, hospital, ubicacion, estado) {
+        function abrirModal(id, codigo, nombre, hospital, ubicacion, estado) {
             document.getElementById('edit-id').value = id;
+            document.getElementById('edit-codigo').value = codigo;
             document.getElementById('edit-nombre').value = nombre;
             document.getElementById('edit-hospital').value = hospital;
             document.getElementById('edit-ubicacion').value = ubicacion;
             document.getElementById('edit-estado').value = estado;
-            modalInstance.show();
+            modalEditarInstance.show();
+        }
+
+        function abrirModalNuevo() {
+            document.getElementById('form-nuevo').reset();
+            modalNuevoInstance.show();
         }
 
         async function guardarCambios(e) {
@@ -156,7 +215,7 @@
                 });
 
                 if (response.ok) {
-                    modalInstance.hide();
+                    modalEditarInstance.hide();
                     cargarEquipos();
                 } else {
                     alert('Error al actualizar el equipo');
@@ -164,6 +223,34 @@
             } catch (error) {
                 console.error('Error:', error);
                 alert('Error de red al actualizar');
+            }
+        }
+
+        async function registrarEquipo(e) {
+            e.preventDefault();
+            const codigo_inventario = document.getElementById('new-codigo').value;
+            const nombre_equipo = document.getElementById('new-nombre').value;
+            const hospital = document.getElementById('new-hospital').value;
+            const ubicacion = document.getElementById('new-ubicacion').value;
+            const estado = document.getElementById('new-estado').value;
+
+            try {
+                const response = await fetch('/api/equipos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo_inventario, nombre_equipo, hospital, ubicacion, estado })
+                });
+
+                if (response.ok) {
+                    modalNuevoInstance.hide();
+                    cargarEquipos();
+                } else {
+                    const errData = await response.json();
+                    alert('Error al registrar: ' + (errData.error || 'Verifica los datos'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error de red al registrar equipo');
             }
         }
     </script>

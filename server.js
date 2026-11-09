@@ -27,7 +27,28 @@ app.get('/api/equipos', async (req, res) => {
   }
 });
 
-// Actualizar equipo (incluyendo nombre, hospital, ubicación y estado)
+// Crear un nuevo equipo
+app.post('/api/equipos', async (req, res) => {
+  const { codigo_inventario, nombre_equipo, hospital, ubicacion, estado } = req.body;
+  try {
+    const query = `
+      INSERT INTO equipos (codigo_inventario, nombre_equipo, hospital, ubicacion, estado, ultima_actualizacion)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      RETURNING *;
+    `;
+    const values = [codigo_inventario, nombre_equipo, hospital, ubicacion, estado];
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err.message);
+    if (err.code === '23505') {
+      return res.status(400).json({ error: 'El código de inventario ya existe.' });
+    }
+    res.status(500).send('Error al registrar el nuevo equipo');
+  }
+});
+
+// Actualizar equipo existente
 app.put('/api/equipos/:id', async (req, res) => {
   const { id } = req.params;
   const { nombre_equipo, hospital, ubicacion, estado } = req.body;
