@@ -7,7 +7,6 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configuración de la conexión a PostgreSQL (compatible con Render usando DATABASE_URL)
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : false
@@ -17,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 1. Endpoint para obtener todos los equipos
+// Obtener todos los equipos
 app.get('/api/equipos', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM equipos ORDER BY id ASC');
@@ -28,17 +27,17 @@ app.get('/api/equipos', async (req, res) => {
   }
 });
 
-// 2. Endpoint para actualizar la ubicación o estado de un equipo
+// Actualizar equipo (incluyendo hospital, ubicación y estado)
 app.put('/api/equipos/:id', async (req, res) => {
   const { id } = req.params;
-  const { ubicacion, estado } = req.body;
+  const { hospital, ubicacion, estado } = req.body;
   try {
     const query = `
       UPDATE equipos 
-      SET ubicacion = $1, estado = $2, ultima_actualizacion = NOW() 
-      WHERE id = $3 RETURNING *;
+      SET hospital = $1, ubicacion = $2, estado = $3, ultima_actualizacion = NOW() 
+      WHERE id = $4 RETURNING *;
     `;
-    const values = [ubicacion, estado, id];
+    const values = [hospital, ubicacion, estado, id];
     const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {
