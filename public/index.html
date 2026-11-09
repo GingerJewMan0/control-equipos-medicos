@@ -12,7 +12,7 @@
         <header class="pb-3 mb-4 border-bottom d-flex justify-content-between align-items-center">
             <div>
                 <h1 class="h3 fw-bold text-primary">🏥 Control de Equipos Médicos</h1>
-                <p class="text-muted m-0">Monitoreo de ubicación, hospital y estado en tiempo real</p>
+                <p class="text-muted m-0">Monitoreo de equipos, hospitales y estados en tiempo real</p>
             </div>
             <button class="btn btn-outline-secondary btn-sm" onclick="cargarEquipos()">🔄 Refrescar</button>
         </header>
@@ -46,23 +46,23 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Actualizar Equipo</h5>
+                    <h5 class="modal-title">Actualizar Equipo y Modelo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="form-editar">
                         <input type="hidden" id="edit-id">
                         <div class="mb-3">
-                            <label for="edit-nombre" class="form-label">Equipo</label>
-                            <input type="text" class="form-control" id="edit-nombre" disabled>
+                            <label for="edit-nombre" class="form-label">Equipo / Modelo</label>
+                            <input type="text" class="form-control" id="edit-nombre" required placeholder="Ej. Desfibrilador Biphasic Pro">
                         </div>
                         <div class="mb-3">
                             <label for="edit-hospital" class="form-label">Hospital</label>
-                            <input type="text" class="form-control" id="edit-hospital" required placeholder="Ej. Hospital General Norte">
+                            <input type="text" class="form-control" id="edit-hospital" required placeholder="Ej. Hospital General">
                         </div>
                         <div class="mb-3">
-                            <label for="edit-ubicacion" class="form-label">Nueva Ubicación (Área / Piso)</label>
-                            <input type="text" class="form-control" id="edit-ubicacion" required placeholder="Ej. Urgencias - Piso 2">
+                            <label for="edit-ubicacion" class="form-label">Ubicación Actual (Área / Piso)</label>
+                            <input type="text" class="form-control" id="edit-ubicacion" required placeholder="Ej. Urgencias - Cubículo 3">
                         </div>
                         <div class="mb-3">
                             <label for="edit-estado" class="form-label">Estado del Equipo</label>
@@ -143,6 +143,7 @@
         async function guardarCambios(e) {
             e.preventDefault();
             const id = document.getElementById('edit-id').value;
+            const nombre_equipo = document.getElementById('edit-nombre').value;
             const hospital = document.getElementById('edit-hospital').value;
             const ubicacion = document.getElementById('edit-ubicacion').value;
             const estado = document.getElementById('edit-estado').value;
@@ -151,7 +152,7 @@
                 const response = await fetch(`/api/equipos/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ hospital, ubicacion, estado })
+                    body: JSON.stringify({ nombre_equipo, hospital, ubicacion, estado })
                 });
 
                 if (response.ok) {

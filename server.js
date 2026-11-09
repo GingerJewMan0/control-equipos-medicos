@@ -27,17 +27,17 @@ app.get('/api/equipos', async (req, res) => {
   }
 });
 
-// Actualizar equipo (incluyendo hospital, ubicación y estado)
+// Actualizar equipo (incluyendo nombre, hospital, ubicación y estado)
 app.put('/api/equipos/:id', async (req, res) => {
   const { id } = req.params;
-  const { hospital, ubicacion, estado } = req.body;
+  const { nombre_equipo, hospital, ubicacion, estado } = req.body;
   try {
     const query = `
       UPDATE equipos 
-      SET hospital = $1, ubicacion = $2, estado = $3, ultima_actualizacion = NOW() 
-      WHERE id = $4 RETURNING *;
+      SET nombre_equipo = $1, hospital = $2, ubicacion = $3, estado = $4, ultima_actualizacion = NOW() 
+      WHERE id = $5 RETURNING *;
     `;
-    const values = [hospital, ubicacion, estado, id];
+    const values = [nombre_equipo, hospital, ubicacion, estado, id];
     const result = await pool.query(query, values);
     
     if (result.rows.length === 0) {
